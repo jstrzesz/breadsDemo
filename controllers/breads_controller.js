@@ -1,10 +1,16 @@
 const express = require('express');
 const breads = express.Router();
 const Bread = require('../models/bread');
+// const Index = require('../views/Index');
 
 // INDEX
 breads.get('/', (req, res) => {
-  res.send(Bread);
+  res.render('Index', {
+      breads: Bread,
+      title: 'Index Page',
+    }
+  );
+  // res.send(Bread);
 });
 
 // SHOW
