@@ -1,69 +1,127 @@
 const express = require('express');
 const breads = express.Router();
 const Bread = require('../models/bread');
+const Baker = require('../models/baker');
+const seedData = require('../models/seed');
+
+// SEED
+breads.get('/data/seed', (req, res) => {
+  Bread.insertMany(seedData)
+    .then(createdBreads => {
+      res.redirect('/breads');
+    })
+    .catch(err => {
+      console.error(err);
+      res.redirect('Error404');
+    })
+})
 
 // INDEX
-breads.get('/', (req, res) => {
-  res.render('Index', {
-    breads: Bread,
-    title: 'Index Page',
-  }
-  );
+breads.get('/', async (req, res) => {
+  try {
+    const foundBakers = await Baker.find().lean();
+    const foundBreads = await Bread.find().limit(2).lean();
+    res.render('Index', {
+        bakers: foundBakers,
+        breads: foundBreads,
+        title: 'Index Page',
+      }
+    );
+  } catch (error) {
+    res.render('Error404');
+  };
 });
 
 // New
 breads.get('/new', (req, res) => {
-  res.render('New');
+  Baker.find()
+    .then(foundBakers => {
+      res.render('New', { 
+        bakers: foundBakers
+      });
+    })
+    .catch(err => {
+      console.log(err);
+      res.redirect('Error404');
+    });
 });
 
-
 // SHOW
-breads.get('/:arrayIndex', (req, res) => {
-  if (Bread[req.params.arrayIndex]) {
-    res.render('Show', {
-      bread: Bread[req.params.arrayIndex],
-      index: req.params.arrayIndex,
+breads.get('/:id', (req, res) => {
+  Bread.findById(req.params.id)
+    .populate('baker')
+    .then(foundBread => {
+      console.log(foundBread);
+      res.render('Show', {
+        bread: foundBread,
+      });
+
+    })
+    .catch(err => {
+      res.render('Error404');
     });
-  } else {
-    res.render('Error404');
-  }
 });
 
 // EDIT
-breads.get('/:arrayIndex/edit', (req, res) => {
-  res.render('Edit', {
-    bread: Bread[req.params.arrayIndex],
-    index: req.params.arrayIndex,
-  });
+breads.get('/:id/edit', (req, res) => {
+  Baker.find()
+    .then(foundBakers => {
+      Bread.findById(req.params.id)
+        .then(foundBread => {
+          res.render('Edit', {
+            bread: foundBread,
+            bakers: foundBakers,
+          });
+        })
+    })
+    .catch(err => {
+      console.error(err);
+      res.redirect('Error404');
+    })
 });
 
 // CREATE
 breads.post('/', (req, res) => {
+  if (!req.body.image) {
+    req.body.image = undefined;
+  }
   if (req.body.hasGluten === 'on') {
     req.body.hasGluten = 'true';
   } else {
     req.body.hasGluten = 'false';
   }
-  Bread.push(req.body);
+  Bread.create(req.body);
   res.redirect('/breads');
 });
 
-//
-breads.put('/:arrayIndex', (req, res) => {
+// UPDATE
+breads.put('/:id', (req, res) => {
   if (req.body.hasGluten === 'on') {
     req.body.hasGluten = true;
   } else {
     req.body.hasGluten = false;
   }
-  Bread[req.params.arrayIndex] = req.body;
-  res.redirect(`/breads/${req.params.arrayIndex}`);
+  Bread.findByIdAndUpdate(req.params.id, req.body, { new: true })
+    .then(updatedBread => {
+      res.redirect(`/breads/${req.params.id}`);
+    })
+    .catch(err => {
+      console.error(err);
+      res.redirect('Error404');
+    })
 });
 
+
 // DESTROY
-breads.delete('/:indexArray', (req, res) => {
-  Bread.splice(req.params.indexArray, 1);
-  res.status(303).redirect('/breads');
+breads.delete('/:id', (req, res) => {
+  Bread.findByIdAndDelete(req.params.id)
+    .then(deletedBread => {
+      res.status(303).redirect('/breads');
+    })
+    .catch(err => {
+      console.error(err);
+      res.redirect('Error404');
+    })
 });
 
 module.exports = breads;
-

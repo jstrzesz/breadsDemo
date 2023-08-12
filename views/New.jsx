@@ -1,7 +1,7 @@
 const React = require('react');
 const Def = require('./layouts/Def');
 
-function New() {
+function New({ bakers }) {
   return (
     <Def>
       <h2>Add a new bread</h2>
@@ -28,6 +28,12 @@ function New() {
             id="hasGluten"
             defaultChecked
           />
+          <label htmlFor='baker'>Baker Name</label>
+          <select name='baker' id='baker'>
+            { bakers.map(baker => (
+              <option value={ baker.id } key={ baker.id }>{ baker.name }</option>
+            ))}
+          </select>
           <br />
           <input type="submit"/>
         </form>
